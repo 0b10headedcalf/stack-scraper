@@ -4,4 +4,9 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "pyinstaller>=6.19.0",
+]
+
+[project.scripts]
+stack-scrape = "stack-scrape.py"

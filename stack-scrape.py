@@ -1,6 +1,7 @@
 import subprocess
-import argparse
 import shutil
+import click
+
 
 DEPS = ["ffmpeg","yt-dlp"]
 DEBUG = True
@@ -19,15 +20,19 @@ def checkDependencies():
     if DEBUG:
         print("All dependencies have been properly installed")
 
+def getCredentials():
+    pass
 def runVideoDownloader():
     pass
 
-def setAuth():
+def AuthUser(credentials):
     pass
 
 
 def main():
     checkDependencies()
+    
+    
 
 
 if __name__ == "__main__":
