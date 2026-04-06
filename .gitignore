@@ -1,1 +1,12 @@
 .env
+__pycache__
+
+
+/usrdata/*
+/usrdata/state.json
+/usrdata/credentials.toml
+./usrdata/*
+./usrdata/state.json
+./usrdata/credentials.toml
+
+htmlguides
