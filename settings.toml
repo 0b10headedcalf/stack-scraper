@@ -1,0 +1,6 @@
+#default settings
+[setup]
+fts = true
+os = "linux"
+browser = "chromium"
+

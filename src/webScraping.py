@@ -1,3 +1,4 @@
+import json
 import tomllib
 import time
 import os
@@ -27,9 +28,28 @@ def scrapeInstagram():
     pass_fill = LOGIN_CREDENTIALS["instagram"]["password"]
     site_arg = "https://instagram.com/"
 
+    def scrollUntilLoaded(page):
+        seen = set()
+        while True:
+            current_links = page.locator("article a").evaluate_all(
+                "els=>els.map(el=>el.href)"
+            )
+            seen.update(current_links)
+            prev = len(seen)
+            page.keyboard.press("End")
+            time.sleep(1.5)
+            current_links = page.locator("article a").evaluate_all(
+                "els=>els.map(el=>el.href)"
+            )
+            seen.update(current_links)
+            print(prev, len(seen))
+            if len(seen) == prev:
+                break
+        return list(seen)
+
     def queryCollection(page):
         container = page.locator('[aria-label="Saved collections"]')
-        container.wait_for(state="visible", timeout=10_000)
+        container.wait_for(state="visible")
         links = container.locator("a[aria-label]")
         return [
             (
@@ -40,7 +60,7 @@ def scrapeInstagram():
         ]
 
     with sync_playwright() as p:
-        browser = getattr(p, browser_choice).launch(headless=False, slow_mo=100)
+        browser = getattr(p, browser_choice).launch(headless=False)
         if os.path.isfile(STATEPATH):
             context = browser.new_context(storage_state=STATEPATH)
             page = context.new_page()
@@ -53,17 +73,22 @@ def scrapeInstagram():
             page.locator("[name='email']").fill(email_fill)
             page.locator("[name='pass']").fill(pass_fill)
             page.get_by_label("Log In").click()
-            page.wait_for_url("**/auth_platform/**", timeout=60_000)
+            page.wait_for_url("**/auth_platform/**", timeout=120_000)
             print("Waiting for 2FA to be completed...")
-            page.wait_for_url(lambda url: "auth_platform" not in url, timeout=300_000)
+            page.wait_for_url(lambda url: "auth_platform" not in url)
             print("2FA complete")
             site_arg += _username + "/saved/"
             page.goto(site_arg)
             context.storage_state(path=STATEPATH)
         collections = queryCollection(page)
         print(collections)
-        page.goto("https://www.instagram.com" + collections[1][1])
-        time.sleep(9999999)
+        target_collection = "https://www.instagram.com" + collections[1][1]
+        page.goto(target_collection)
+        page.wait_for_selector("article a", state="attached")
+        links = scrollUntilLoaded(page)
+        with open(f"./out/{collections[1][0]}-videos.json", "w") as f:
+            json.dump(links, f)
+            print(f"links saved to {str(f)}")
         browser.close()
 
 
