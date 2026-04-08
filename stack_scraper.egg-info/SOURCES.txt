@@ -1,0 +1,13 @@
+README.md
+pyproject.toml
+src/__init__.py
+src/consts.py
+src/utils.py
+src/scraping/__init__.py
+src/scraping/gatherCredentials.py
+src/scraping/webScraping.py
+stack_scraper.egg-info/PKG-INFO
+stack_scraper.egg-info/SOURCES.txt
+stack_scraper.egg-info/dependency_links.txt
+stack_scraper.egg-info/requires.txt
+stack_scraper.egg-info/top_level.txt

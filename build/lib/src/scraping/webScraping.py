@@ -2,7 +2,7 @@ import json
 import tomllib
 import time
 import os
-from src import utils
+import utils
 from playwright.sync_api import sync_playwright
 from playwright.sync_api import Page
 
@@ -38,7 +38,7 @@ def scrapeInstagram():
             seen.update(current_links)
             prev = len(seen)
             page.keyboard.press("End")
-            time.sleep(0.5)
+            time.sleep(1.5)
             current_links = page.locator("article a").evaluate_all(
                 "els=>els.map(el=>el.href)"
             )
@@ -98,3 +98,6 @@ def scrapeTikTok():
     user_fill = LOGIN_CREDENTIALS["tiktok"]["username"]
     pass_fill = LOGIN_CREDENTIALS["tiktok"]["password`"]
     return
+
+
+scrapeInstagram()
