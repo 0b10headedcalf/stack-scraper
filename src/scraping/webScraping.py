@@ -4,6 +4,7 @@ import time
 import os
 import utils
 from playwright.sync_api import sync_playwright
+from playwright.sync_api import Page
 
 DIRNAME = os.getcwd()
 STATEPATH = os.path.join(DIRNAME, "usrdata/state.json")
@@ -28,7 +29,7 @@ def scrapeInstagram():
     pass_fill = LOGIN_CREDENTIALS["instagram"]["password"]
     site_arg = "https://instagram.com/"
 
-    def scrollUntilLoaded(page):
+    def scrollUntilLoaded(page: Page) -> List:
         seen = set()
         while True:
             current_links = page.locator("article a").evaluate_all(
@@ -47,7 +48,7 @@ def scrapeInstagram():
                 break
         return list(seen)
 
-    def queryCollection(page):
+    def queryCollection(page: Page) -> List[str]:
         container = page.locator('[aria-label="Saved collections"]')
         container.wait_for(state="visible")
         links = container.locator("a[aria-label]")
@@ -96,20 +97,7 @@ def scrapeTikTok():
     site_arg = "https://tiktok.com/"
     user_fill = LOGIN_CREDENTIALS["tiktok"]["username"]
     pass_fill = LOGIN_CREDENTIALS["tiktok"]["password`"]
-
-    def scrapeCollectionNames():
-        pass
-
-    def gatherCollections(collectionName):
-        pass
-
-    if FTS == True:
-        with sync_playwright() as p:
-            browser = getattr(p, browser_choice).launch(headless=False)
-            page = browser.new_page()
-            page.goto(site_arg)
-            time.sleep(999999999)
-            browser.close()
+    return
 
 
 scrapeInstagram()
