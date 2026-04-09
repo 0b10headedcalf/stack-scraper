@@ -1,19 +1,18 @@
 import json
-import tomllib
 import time
 import os
-from src import utils
 from playwright.sync_api import sync_playwright
 from playwright.sync_api import Page
+from .. import consts
 
-DIRNAME = os.getcwd()
-STATEPATH = os.path.join(DIRNAME, "usrdata/state.json")
-f_SETTINGS = open("settings.toml", "rb")
-f_CREDENTIALS = open("./usrdata/credentials-test.toml", "rb")
-SETTINGS = tomllib.load(f_SETTINGS)
-LOGIN_CREDENTIALS = tomllib.load(f_CREDENTIALS)
-FTS, BROWSER = SETTINGS["setup"]["fts"], SETTINGS["setup"]["browser"]
-PRESETS = ("instagram", "tiktok")
+DIRNAME = consts.DIRNAME
+STATEPATH = consts.STATEPATH
+f_SETTINGS = consts.f_SETTINGS
+f_CREDENTIALS = consts.f_CREDENTIALS
+SETTINGS = consts.SETTINGS
+LOGIN_CREDENTIALS = consts.LOGIN_CREDENTIALS
+FTS, BROWSER = consts.FTS, consts.BROWSER
+PRESETS = consts.PRESETS
 global AUTH
 global site_arg
 browser_choice = BROWSER
@@ -23,7 +22,10 @@ def checkState():
     return os.path.isfile(STATEPATH)
 
 
-@utils.isFirstTimeSetup(initialSetup=FTS)
+def grabCollections(platform: str):
+    pass
+
+
 def scrape_instagram(headless: bool):
     _username = LOGIN_CREDENTIALS["instagram"]["username"]
     email_fill = LOGIN_CREDENTIALS["instagram"]["email"]
