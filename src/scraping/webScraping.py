@@ -13,17 +13,18 @@ f_CREDENTIALS = open("./usrdata/credentials-test.toml", "rb")
 SETTINGS = tomllib.load(f_SETTINGS)
 LOGIN_CREDENTIALS = tomllib.load(f_CREDENTIALS)
 FTS, BROWSER = SETTINGS["setup"]["fts"], SETTINGS["setup"]["browser"]
+PRESETS = ("instagram", "tiktok")
 global AUTH
 global site_arg
 browser_choice = BROWSER
 
 
 def checkState():
-    pass
+    return os.path.isfile(STATEPATH)
 
 
 @utils.isFirstTimeSetup(initialSetup=FTS)
-def scrapeInstagram():
+def scrape_instagram(headless: bool):
     _username = LOGIN_CREDENTIALS["instagram"]["username"]
     email_fill = LOGIN_CREDENTIALS["instagram"]["email"]
     pass_fill = LOGIN_CREDENTIALS["instagram"]["password"]
@@ -61,8 +62,8 @@ def scrapeInstagram():
         ]
 
     with sync_playwright() as p:
-        browser = getattr(p, browser_choice).launch(headless=False)
-        if os.path.isfile(STATEPATH):
+        browser = getattr(p, browser_choice).launch(headless=headless)
+        if checkState() == True:
             context = browser.new_context(storage_state=STATEPATH)
             page = context.new_page()
             site_arg += _username + "/saved/"
@@ -93,8 +94,16 @@ def scrapeInstagram():
         browser.close()
 
 
-def scrapeTikTok():
+def scrape_tiktok():
     site_arg = "https://tiktok.com/"
     user_fill = LOGIN_CREDENTIALS["tiktok"]["username"]
     pass_fill = LOGIN_CREDENTIALS["tiktok"]["password`"]
     return
+
+
+def scrape(site: str, headless=bool):
+    if site.lower() in PRESETS:
+        globals()[f"scrape_{site}"](headless=headless)
+    else:
+        print("Invalid site preset")
+        return
