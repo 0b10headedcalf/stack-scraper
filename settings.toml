@@ -1,4 +1,3 @@
 [setup]
 fts = false
 os = "linux"
-browser = "chromium"

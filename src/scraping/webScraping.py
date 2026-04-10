@@ -1,38 +1,59 @@
 import json
 import time
 import os
-from playwright.sync_api import sync_playwright
+from typing import List
 from playwright.sync_api import Page
+from camoufox.sync_api import Camoufox
 from .. import consts
 
 DIRNAME = consts.DIRNAME
-STATEPATH = consts.STATEPATH
-f_SETTINGS = consts.f_SETTINGS
-f_CREDENTIALS = consts.f_CREDENTIALS
+STATEPATHS = consts.STATEPATHS
 SETTINGS = consts.SETTINGS
 LOGIN_CREDENTIALS = consts.LOGIN_CREDENTIALS
-FTS, BROWSER = consts.FTS, consts.BROWSER
+FTS = consts.FTS
 PRESETS = consts.PRESETS
-global AUTH
-global site_arg
-browser_choice = BROWSER
 
 
-def checkState():
-    return os.path.isfile(STATEPATH)
+def checkState(platform: str):
+    return os.path.isfile(STATEPATHS[platform.lower()])
 
 
-def grabCollections(platform: str):
-    pass
+def _scrollAndCollect(
+    page: Page, container_sel: str, card_sel: str, delay: float = 1.5
+) -> List[tuple]:
+    seen = {}
+    container = page.locator(container_sel)
+    container.wait_for(state="visible")
+    while True:
+        prev = len(seen)
+        cards = container.locator(card_sel)
+        for i in range(cards.count()):
+            card = cards.nth(i)
+            href = card.get_attribute("href")
+            if href and href not in seen:
+                img = card.locator("img")
+                alt = img.get_attribute("alt") if img.count() > 0 else ""
+                seen[href] = alt or ""
+        page.keyboard.press("End")
+        time.sleep(delay)
+        cards = container.locator(card_sel)
+        for i in range(cards.count()):
+            card = cards.nth(i)
+            href = card.get_attribute("href")
+            if href and href not in seen:
+                img = card.locator("img")
+                alt = img.get_attribute("alt") if img.count() > 0 else ""
+                seen[href] = alt or ""
+        print(f"items found: {prev} -> {len(seen)}")
+        if len(seen) == prev:
+            break
+    return [(alt, href) for href, alt in seen.items()]
 
 
-def scrape_instagram(headless: bool):
-    _username = LOGIN_CREDENTIALS["instagram"]["username"]
-    email_fill = LOGIN_CREDENTIALS["instagram"]["email"]
-    pass_fill = LOGIN_CREDENTIALS["instagram"]["password"]
-    site_arg = "https://instagram.com/"
-
-    def scrollUntilLoaded(page: Page) -> List:
+def scrollUntilLoaded(
+    page: Page, platform: str, context: str = "collection_list"
+) -> List:
+    if platform.lower() == "instagram":
         seen = set()
         while True:
             current_links = page.locator("article a").evaluate_all(
@@ -41,7 +62,7 @@ def scrape_instagram(headless: bool):
             seen.update(current_links)
             prev = len(seen)
             page.keyboard.press("End")
-            time.sleep(0.5)
+            time.sleep(1)
             current_links = page.locator("article a").evaluate_all(
                 "els=>els.map(el=>el.href)"
             )
@@ -50,8 +71,19 @@ def scrape_instagram(headless: bool):
             if len(seen) == prev:
                 break
         return list(seen)
+    else:
+        if context == "collection_list":
+            return _scrollAndCollect(
+                page, "div#collection-item-list", "a[href*='/collection/']"
+            )
+        elif context == "collection_items":
+            return _scrollAndCollect(
+                page, "div#collection-item-list", "a[href*='/video/']"
+            )
 
-    def queryCollection(page: Page) -> List[str]:
+
+def queryCollection(page: Page, platform: str) -> List[str]:
+    if platform.lower() == "instagram":
         container = page.locator('[aria-label="Saved collections"]')
         container.wait_for(state="visible")
         links = container.locator("a[aria-label]")
@@ -62,11 +94,79 @@ def scrape_instagram(headless: bool):
             )
             for i in range(links.count())
         ]
+    else:
+        page.locator("span", has_text="Favorites").first.click()
+        page.locator(".TUXButton-label", has_text="Collections").click()
+        container = page.locator("#collection-item-list")
+        container.wait_for(state="visible")
+        return scrollUntilLoaded(page, platform)
 
-    with sync_playwright() as p:
-        browser = getattr(p, browser_choice).launch(headless=headless)
-        if checkState() == True:
-            context = browser.new_context(storage_state=STATEPATH)
+
+def scrapeCollections(platform: str, headless: bool):
+    _username = LOGIN_CREDENTIALS[platform]["username"]
+    email_fill = LOGIN_CREDENTIALS[platform]["email"]
+    pass_fill = LOGIN_CREDENTIALS[platform]["password"]
+    if platform.lower() == "instagram":
+        site_arg = "https://instagram.com/"
+        with Camoufox(headless=headless) as browser:
+            state_path = STATEPATHS[platform.lower()]
+            if checkState(platform):
+                context = browser.new_context(storage_state=state_path)
+                page = context.new_page()
+                site_arg += _username + "/saved/"
+                page.goto(site_arg)
+            else:
+                context = browser.new_context()
+                page = context.new_page()
+                page.goto(site_arg)
+                page.locator("[name='email']").fill(email_fill)
+                page.locator("[name='pass']").fill(pass_fill)
+                page.get_by_label("Log In").click()
+                page.wait_for_url("**/auth_platform/**", timeout=120_000)
+                print("Waiting for 2FA to be completed...")
+                page.wait_for_url(lambda url: "auth_platform" not in url)
+                print("2FA complete")
+                site_arg += _username + "/saved/"
+                page.goto(site_arg)
+                context.storage_state(path=state_path)
+            collections = queryCollection(page, platform=platform)
+        return collections
+    else:
+        site_arg = "https://tiktok.com/"
+        with Camoufox(headless=headless) as browser:
+            state_path = STATEPATHS[platform.lower()]
+            if checkState(platform):
+                context = browser.new_context(storage_state=state_path)
+                page = context.new_page()
+                site_arg += "@" + _username
+                page.goto(site_arg)
+            else:
+                context = browser.new_context()
+                page = context.new_page()
+                page.goto(site_arg + "login/phone-or-email/email/")
+                page.locator("[name='username']").fill(email_fill)
+                page.locator("[type='password']").fill(pass_fill)
+                page.locator("[type='submit']").click()
+                page.wait_for_url("**/2sv/**", timeout=120_000)
+                print("Waiting for 2FA to be completed...")
+                page.wait_for_url(lambda url: "2sv" not in url)
+                print("2FA complete")
+                page.goto(site_arg)
+                context.storage_state(path=state_path)
+            collections = queryCollection(page, platform=platform)
+        return collections
+
+
+def scrape_instagram(headless: bool, collection: tuple):
+    _username = LOGIN_CREDENTIALS["instagram"]["username"]
+    email_fill = LOGIN_CREDENTIALS["instagram"]["email"]
+    pass_fill = LOGIN_CREDENTIALS["instagram"]["password"]
+    site_arg = "https://instagram.com/"
+
+    with Camoufox(headless=headless) as browser:
+        state_path = STATEPATHS["instagram"]
+        if checkState("instagram"):
+            context = browser.new_context(storage_state=state_path)
             page = context.new_page()
             site_arg += _username + "/saved/"
             page.goto(site_arg)
@@ -83,29 +183,55 @@ def scrape_instagram(headless: bool):
             print("2FA complete")
             site_arg += _username + "/saved/"
             page.goto(site_arg)
-            context.storage_state(path=STATEPATH)
-        collections = queryCollection(page)
-        print(collections)
-        target_collection = "https://www.instagram.com" + collections[1][1]
+            context.storage_state(path=state_path)
+        target_collection = "https://www.instagram.com" + collection[1]
         page.goto(target_collection)
         page.wait_for_selector("article a", state="attached")
-        links = scrollUntilLoaded(page)
-        with open(f"./out/{collections[1][0]}-videos.json", "w") as f:
+        links = scrollUntilLoaded(page, platform="instagram")
+        with open(f"./out/{collection[0]}-videos.json", "w") as f:
             json.dump(links, f)
             print(f"links saved to {str(f)}")
-        browser.close()
+    return None
 
 
-def scrape_tiktok():
+def scrape_tiktok(headless: bool, collection: tuple):
     site_arg = "https://tiktok.com/"
-    user_fill = LOGIN_CREDENTIALS["tiktok"]["username"]
-    pass_fill = LOGIN_CREDENTIALS["tiktok"]["password`"]
-    return
+    email_fill = LOGIN_CREDENTIALS["tiktok"]["email"]
+    pass_fill = LOGIN_CREDENTIALS["tiktok"]["password"]
+
+    with Camoufox(headless=headless) as browser:
+        state_path = STATEPATHS["tiktok"]
+        if checkState("tiktok"):
+            context = browser.new_context(storage_state=state_path)
+            page = context.new_page()
+            page.goto(site_arg)
+        else:
+            context = browser.new_context()
+            page = context.new_page()
+            page.goto(site_arg + "login/phone-or-email/email/")
+            page.locator("[name='username']").fill(email_fill)
+            page.locator("[type='password']").fill(pass_fill)
+            page.locator("[type='submit']").click()
+            page.wait_for_url("**/2sv/**", timeout=120_000)
+            print("Waiting for 2FA to be completed...")
+            page.wait_for_url(lambda url: "2sv" not in url)
+            print("2FA complete")
+            page.goto(site_arg)
+            context.storage_state(path=state_path)
+        target_collection = "https://www.tiktok.com" + collection[1]
+        print(target_collection)
+        page.goto(target_collection)
+        links = scrollUntilLoaded(page, platform="tiktok", context="collection_items")
+        print(links)
+        # with open(f"./out/{collection[0]}-videos.json", "w") as f:
+        #     json.dump(links, f)
+        #     print(f"links saved to {str(f)}")
+    return None
 
 
-def scrape(site: str, headless=bool):
+def scrape(site: str, headless: bool, collection):
     if site.lower() in PRESETS:
-        globals()[f"scrape_{site}"](headless=headless)
+        globals()[f"scrape_{site}"](headless=headless, collection=collection)
     else:
-        print("Invalid site preset")
-        return
+        print("Invalid site query")
+        return None
