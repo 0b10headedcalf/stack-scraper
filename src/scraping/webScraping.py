@@ -50,9 +50,7 @@ def _scrollAndCollect(
     return [(alt, href) for href, alt in seen.items()]
 
 
-def scrollUntilLoaded(
-    page: Page, platform: str, context: str = "collection_list"
-) -> List:
+def scrollUntilLoaded(page: Page, platform: str, context: str = "collection_list"):
     if platform.lower() == "instagram":
         seen = set()
         while True:

@@ -1,6 +1,7 @@
 .env
 __pycache__
 
+/out/*
 
 /usrdata/*
 /usrdata/state.json

@@ -1,3 +1,4 @@
+import json
 import shutil
 import typer
 import shutil
@@ -51,12 +52,19 @@ def checkDependencies() -> bool:
 
 
 @app.command()
+def seeCollections(platform: str):
+    with open(f"./out/collections-{platform.lower()}.json", "r") as f:
+        parsed = json.load(f)
+        print(parsed)
+
+
+@app.command()
 def run_adv(site: str, headless: bool, collection: int):
     webScraping.scrape(site=site, headless=headless, collection=collection)
 
 
 @app.command()
-def run():
+def run_wizard():
     print("\nWelcome to " + consts.logo)
     print("-" * TERM_W)
     print("Which website would you like to scrape?")
@@ -77,6 +85,8 @@ def run():
     foundcollections = webScraping.scrapeCollections(
         platform=sitechoice, headless=headless
     )
+    with open(f"./out/collections-{sitechoice.lower()}.json", "w") as f:
+        json.dump(foundcollections, f)
     print("Which collection would you like to scrape?")
     for i, collection in enumerate(foundcollections, 1):
         print(f"{i}. {collection[0]}")
@@ -121,22 +131,6 @@ def setup():
         with open("settings.toml", "w") as f:
             toml.dump(config, f)
         print("Setup complete! Please rerun the application.")
-
-
-# TODO: ludovico the user at a later date
-# @app.command()
-# def watch(collection_path: str, unwatched_only: bool = True):
-#     """
-#     Launch the video lockdown player for a scraped collection.
-#
-#     Args:
-#         collection_path: Path to the collection directory
-#         unwatched_only: Only play videos you haven't watched yet
-#     """
-#     manager = VideoPlaybackManager(collection_path)
-#     player = manager.launch_player(unwatched_only=unwatched_only)
-#     player.play_current_video()
-#     player.show()
 
 
 if __name__ == "__main__":
