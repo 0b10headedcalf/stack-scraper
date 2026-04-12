@@ -1,3 +1,4 @@
+from ast import Not
 import json
 import shutil
 import typer
@@ -65,6 +66,13 @@ def run_adv(site: str, headless: bool, collection: int):
 
 @app.command()
 def run_wizard():
+    def _postcollectionopts():
+        options = ["Download videos", "Download audio", "Transcribe(requires download)"]
+        for i, opt in enumerate(options, 1):
+            print(f"{i}. {opt}")
+        opt_choice = options(int(input("Select an option: ")) - 1)
+        return opt_choice
+
     print("\nWelcome to " + consts.logo)
     print("-" * TERM_W)
     print("Which website would you like to scrape?")
@@ -75,7 +83,7 @@ def run_wizard():
     state_path = consts.STATEPATHS[sitechoice.lower()]
     if os.path.isfile(state_path):
         print(f"State found for {sitechoice}!")
-        headless = True
+        headless = False
     else:
         print(
             f"Can't find state file for {sitechoice}, it might be misplaced, malformed, or missing. Running first time setup..."
@@ -85,14 +93,24 @@ def run_wizard():
     foundcollections = webScraping.scrapeCollections(
         platform=sitechoice, headless=headless
     )
-    with open(f"./out/collections-{sitechoice.lower()}.json", "w") as f:
-        json.dump(foundcollections, f)
     print("Which collection would you like to scrape?")
     for i, collection in enumerate(foundcollections, 1):
         print(f"{i}. {collection[0]}")
     toCollect = foundcollections[int(input("Select:")) - 1]
     webScraping.scrape(site=sitechoice, headless=headless, collection=toCollect)
     print("Finished scraping! Look in your //out// directory for a list of links")
+    print("What would you like to do with your collection?")
+    choice = _postcollectionopts()
+    match choice:
+        # download videos
+        case 1:
+            return NotImplementedError
+        # download audio
+        case 2:
+            return NotImplementedError
+        # transcribe
+        case 3:
+            return NotImplementedError
 
 
 def setup():
