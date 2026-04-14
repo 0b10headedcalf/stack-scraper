@@ -49,106 +49,74 @@ def checkDependencies() -> bool:
 @app.command()
 def seeCollections(platform: str):
     try:
+        cols = []
         with open(f"./out/{platform.lower()}-collections.json", "r") as f:
             parsed = json.load(f)
             for i in range(len(parsed)):
-                print(parsed[i][0])
+                cols.append(parsed[i])
+            return cols
     except FileNotFoundError as e:
         print("Collections list does not exist! Consider running the script first.")
 
 
 @app.command()
-def run_adv(site: str, headless: bool, collection: int):
+def run_nogui(site: str, headless: bool):
+    cols = seeCollections(platform=site)
+    for i, col in enumerate(cols, 1):
+        print(f"{i}. {col[0]}")
+    _ = cols[int(input("Choose a collection...")) - 1]
+    collection = _
+    print(collection)
     webScraping.scrape(site=site, headless=headless, collection=collection)
 
 
 @app.command()
-def run_wizard():
-    def _postcollectionopts():
-        options = ["Download videos", "Download audio", "Transcribe(requires download)"]
-        for i, opt in enumerate(options, 1):
-            print(f"{i}. {opt}")
-        opt_choice = options(int(input("Select an option: ")) - 1)
-        return opt_choice
+def run():
+    from src.gui.wizard import WizardApp
 
-    print("\nWelcome to " + consts.logo)
-    print("-" * TERM_W)
-    print("Which website would you like to scrape?")
-    for i, site in enumerate(PRESETS, 1):
-        print(f"{i}. {site}")
-    sitechoice = PRESETS[int(input("Select (1-2): ")) - 1]
-    print("Checking browserstate...")
-    state_path = consts.STATEPATHS[sitechoice.lower()]
-    if os.path.isfile(state_path):
-        print(f"State found for {sitechoice}!")
-        headless = False
-    else:
-        print(
-            f"Can't find state file for {sitechoice}, it might be misplaced, malformed, or missing. Running first time setup..."
-        )
-        headless = False
-    print("Grabbing collections, please wait...")
-    foundcollections = webScraping.scrapeCollections(
-        platform=sitechoice, headless=headless
-    )
-    with open(f"./out/{sitechoice}-collections.json", "w") as f:
-        json.dump(foundcollections, f)
-    print("Which collection would you like to scrape?")
-    for i, collection in enumerate(foundcollections, 1):
-        print(f"{i}. {collection[0]}")
-    toCollect = foundcollections[int(input("Select:")) - 1]
-    webScraping.scrape(site=sitechoice, headless=headless, collection=toCollect)
-    print("Finished scraping! Look in your //out// directory for a list of links")
-    print("What would you like to do with your collection?")
-    choice = _postcollectionopts()
-    match choice:
-        # download videos
-        case 1:
-            return NotImplementedError
-        # download audio
-        case 2:
-            return NotImplementedError
-        # transcribe
-        case 3:
-            return NotImplementedError
+    run().split()
 
 
+@app.command()
 def setup():
-    if checkDependencies() == True:
-        print("\nWelcome to " + consts.logo)
-        print("-" * TERM_W)
-        print(
-            "In order for the application to work properly, you'll have to enter your social media credentials and manually bypass 2FA."
-        )
-        print("[Instagram]")
-        insta_user = input("What is your instagram username?")
-        insta_email = input("\nEmail?")
-        insta_password = getpass.getpass("Password:")
-        print("[Tiktok]")
-        tt_user = input("What is your TikTok username?")
-        tt_email = input("\nEmail?")
-        tt_password = getpass.getpass("Password:")
-        with open("./usrdata/credentials.toml", "r") as f:
-            data = toml.load(f)
-        (
-            data["instagram"]["username"],
-            data["instagram"]["password"],
-            data["instagram"]["email"],
-        ) = (insta_user, insta_password, insta_email)
-        (
-            data["tiktok"]["username"],
-            data["tiktok"]["password"],
-            data["tiktok"]["email"],
-        ) = (tt_user, tt_password, tt_email)
-        with open("./usrdata/credentials.toml", "w") as f:
-            toml.dump(data, f)
-        print("Credentials added!")
-        with open("settings.toml", "r") as f:
-            config = toml.load(f)
-        config["setup"]["fts"] = False
-        with open("settings.toml", "w") as f:
-            toml.dump(config, f)
-        print("Setup complete! Please rerun the application.")
+    from src.gui.setup import SetupApp
+
+    SetupApp().run()
+    # if checkDependencies() == True:
+    #     print("\nWelcome to " + consts.logo)
+    #     print("-" * TERM_W)
+    #     print(
+    #         "In order for the application to work properly, you'll have to enter your social media credentials and manually bypass 2FA."
+    #     )
+    #     print("[Instagram]")
+    #     insta_user = input("What is your instagram username?")
+    #     insta_email = input("\nEmail?")
+    #     insta_password = getpass.getpass("Password:")
+    #     print("[Tiktok]")
+    #     tt_user = input("What is your TikTok username?")
+    #     tt_email = input("\nEmail?")
+    #     tt_password = getpass.getpass("Password:")
+    #     with open("./usrdata/credentials.toml", "r") as f:
+    #         data = toml.load(f)
+    #     (
+    #         data["instagram"]["username"],
+    #         data["instagram"]["password"],
+    #         data["instagram"]["email"],
+    #     ) = (insta_user, insta_password, insta_email)
+    #     (
+    #         data["tiktok"]["username"],
+    #         data["tiktok"]["password"],
+    #         data["tiktok"]["email"],
+    #     ) = (tt_user, tt_password, tt_email)
+    #     with open("./usrdata/credentials.toml", "w") as f:
+    #         toml.dump(data, f)
+    #     print("Credentials added!")
+    #     with open("settings.toml", "r") as f:
+    #         config = toml.load(f)
+    #     config["setup"]["fts"] = False
+    #     with open("settings.toml", "w") as f:
+    #         toml.dump(config, f)
+    #     print("Setup complete! Please rerun the application.")
 
 
 if __name__ == "__main__":
