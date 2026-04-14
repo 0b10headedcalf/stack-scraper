@@ -21,10 +21,6 @@ FTS, PLATFORM = (
     SETTINGS["setup"]["os"],
 )
 PRESETS = ("instagram", "tiktok")
-LINKFILES = {
-    "tiktok": "./out/{collection[0]}-tiktok-links.json",
-    "instagram": "./out/{collection[0]}-instagram-links.json",
-}
 
 
 LOGIN_FLOWS = {

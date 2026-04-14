@@ -3,7 +3,6 @@ import json
 import time
 import os
 from contextlib import contextmanager
-from typing import List
 from playwright.sync_api import Page
 from camoufox.sync_api import Camoufox
 from .. import consts
@@ -15,7 +14,6 @@ LOGIN_CREDENTIALS = consts.LOGIN_CREDENTIALS
 FTS = consts.FTS
 PRESETS = consts.PRESETS
 LOGIN_FLOWS = consts.LOGIN_FLOWS
-LINKFILES = consts.LINKFILES
 
 
 def checkState(platform: str):
@@ -155,8 +153,8 @@ def scrape_instagram(headless: bool, collection: tuple):
     with authenticated_page("instagram", headless) as page:
         page.goto("https://www.instagram.com" + collection[1])
         page.wait_for_selector("article a", state="attached")
-        links = scrollScrape(page, platform="instagram")
-        with open(LINKFILES["instagram"], "w") as f:
+        links = scrollScrape(page, platform="instagram", tt_isCollection=False)
+        with open(f"./out/{collection[0]}-instagram-links.json", "w") as f:
             json.dump(links, f)
 
 
@@ -167,7 +165,7 @@ def scrape_tiktok(headless: bool, collection):
         links = scrollScrape(
             page, container=container, platform="tiktok", tt_isCollection=True
         )
-        with open(LINKEFILES["tiktok"], "w") as f:
+        with open(f"./out/{collection[0]}-tiktok-links.json", "w") as f:
             json.dump(links, f)
 
 

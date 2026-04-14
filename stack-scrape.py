@@ -1,4 +1,4 @@
-from ast import Not
+#!/usr/bin/env python3
 import json
 import shutil
 import typer
@@ -19,12 +19,6 @@ PLATFORM = consts.PLATFORM
 FTS = consts.FTS
 PRESETS = consts.PRESETS
 TERM_W, TERM_H = shutil.get_terminal_size()
-
-
-def healthCheck():
-    # print(f"os: {PLATFORM}, is FTS:{FTS}")
-    if FTS == False:
-        return True
 
 
 def runInstallScript():
@@ -54,9 +48,13 @@ def checkDependencies() -> bool:
 
 @app.command()
 def seeCollections(platform: str):
-    with open(f"./out/collections-{platform.lower()}.json", "r") as f:
-        parsed = json.load(f)
-        print(parsed)
+    try:
+        with open(f"./out/{platform.lower()}-collections.json", "r") as f:
+            parsed = json.load(f)
+            for i in range(len(parsed)):
+                print(parsed[i][0])
+    except FileNotFoundError as e:
+        print("Collections list does not exist! Consider running the script first.")
 
 
 @app.command()
@@ -93,6 +91,8 @@ def run_wizard():
     foundcollections = webScraping.scrapeCollections(
         platform=sitechoice, headless=headless
     )
+    with open(f"./out/{sitechoice}-collections.json", "w") as f:
+        json.dump(foundcollections, f)
     print("Which collection would you like to scrape?")
     for i, collection in enumerate(foundcollections, 1):
         print(f"{i}. {collection[0]}")
@@ -152,7 +152,7 @@ def setup():
 
 
 if __name__ == "__main__":
-    if healthCheck():
+    if not FTS:
         app()
     elif FTS == True:
         print("Looks like it's your first time using this tool! Running setup...")
