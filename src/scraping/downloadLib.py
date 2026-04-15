@@ -1,5 +1,4 @@
 import shutil
-from asyncio import subprocess
 from pathlib import Path
 import json
 import subprocess
@@ -120,8 +119,13 @@ def transcribeWavs(collection, platform, on_progress=None):
     for i, wav in enumerate(wavs, 1):
         outFile = txtOut / (wav.stem + ".txt")
         result = subprocess.run(
-            ["voxtype", "transcribe", wav], capture_output=True, text=True
+            ["voxtype", "transcribe", str(wav)], capture_output=True, text=True
         )
+        if result.returncode != 0:
+            print(f"voxtype failed for {wav.name}: {result.stderr.strip()}")
+            if on_progress:
+                on_progress(i, total)
+            continue
         transcript_lines = result.stdout.splitlines()
         transcript = "\n".join(transcript_lines[11:])
         info = _load_info(audioDir, wav.stem)

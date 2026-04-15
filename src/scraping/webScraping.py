@@ -167,9 +167,7 @@ def scrape_tiktok(headless: bool, collection):
 
 
 def scrape(site: str, headless: bool, collection):
-    if site.lower() in PRESETS:
-        globals()[f"scrape_{site}"](headless=headless, collection=collection)
-    else:
-        print("Invalid query")
-        return RuntimeError
+    if site.lower() not in PRESETS:
+        raise RuntimeError(f"Unsupported site: {site}")
+    globals()[f"scrape_{site.lower()}"](headless=headless, collection=collection)
     return 0
