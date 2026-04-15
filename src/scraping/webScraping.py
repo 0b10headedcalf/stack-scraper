@@ -57,46 +57,42 @@ def scrollScrape(
     def tt_scrape(container=container, tt_isCollection=tt_isCollection):
         validlinks = container.locator("[data-e2e='collection-item']")
         prev = -1
-        match tt_isCollection:
-            case True:
-                f = set(
-                    tuple(c)
-                    for c in validlinks.evaluate_all(
-                        "els => els.map(el => [el.querySelector('a')?.href])"
-                    )
+        if tt_isCollection:
+            f: set = set(
+                validlinks.evaluate_all(
+                    "els => els.map(el => el.querySelector('a')?.href).filter(Boolean)"
                 )
-            case False:
-                f = set(
-                    tuple(c)
-                    for c in validlinks.evaluate_all(
-                        "els => els.map(el => [el.querySelector('img')?.alt,el.querySelector('a')?.href])"
-                    )
+            )
+        else:
+            f: set = set(
+                tuple(c)
+                for c in validlinks.evaluate_all(
+                    "els => els.map(el => [el.querySelector('img')?.alt, el.querySelector('a')?.href])"
                 )
+            )
         while True:
             current = validlinks.count()
-            # print(current)
             if current == prev:
                 break
             prev = current
             validlinks.nth(current - 1).scroll_into_view_if_needed()
             time.sleep(1)
-            match tt_isCollection:
-                case True:
-                    f.update(
-                        str(c)
-                        for c in validlinks.evaluate_all(
-                            "els => els.map(el => el.querySelector('a')?.href)"
-                        )
+            if tt_isCollection:
+                f.update(
+                    validlinks.evaluate_all(
+                        "els => els.map(el => el.querySelector('a')?.href).filter(Boolean)"
                     )
-                case False:
-                    f.update(
-                        tuple(c)
-                        for c in validlinks.evaluate_all(
-                            "els => els.map(el => [el.querySelector('img')?.alt,el.querySelector('a')?.href])"
-                        )
+                )
+            else:
+                f.update(
+                    tuple(c)
+                    for c in validlinks.evaluate_all(
+                        "els => els.map(el => [el.querySelector('img')?.alt, el.querySelector('a')?.href])"
                     )
-        collectioninfo = (c for c in f if c[0] != None)
-        return list(collectioninfo)
+                )
+        if tt_isCollection:
+            return list(f)
+        return [c for c in f if c[0] is not None]
 
     if platform.lower() == "instagram":
         seen = set()

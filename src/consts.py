@@ -11,7 +11,7 @@ STATEPATHS = {
     "tiktok": os.path.join(DIRNAME, "usrdata/state-tiktok.json"),
 }
 f_SETTINGS = open("settings.toml", "rb")
-f_CREDENTIALS = open("./usrdata/credentials-test.toml", "rb")
+f_CREDENTIALS = open("./usrdata/credentials.toml", "rb")
 
 # user information
 SETTINGS = tomllib.load(f_SETTINGS)

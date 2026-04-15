@@ -171,10 +171,12 @@ class ActionScreen(Screen):
             yield Static(self._LABELS[self.action] + "…", id="status")
             yield LoadingIndicator(id="loader")
             yield ProgressBar(id="progress", show_eta=False, show_percentage=True)
+            yield Static("", id="done-msg", markup=True)
         yield Footer()
 
     def on_mount(self) -> None:
         self.query_one("#progress", ProgressBar).display = False
+        self.query_one("#done-msg", Static).display = False
         self._run()
 
     def _set_status(self, msg: str) -> None:
@@ -195,46 +197,62 @@ class ActionScreen(Screen):
     def _advance_progress(self, current: int, total: int) -> None:
         self.query_one("#progress", ProgressBar).update(progress=current)
 
-    def _finish(self) -> None:
-        self._set_status("Done!")
+    def _finish(self, error: str | None = None) -> None:
         self.query_one("#loader", LoadingIndicator).display = False
-        bar = self.query_one("#progress", ProgressBar)
-        bar.display = False
+        self.query_one("#progress", ProgressBar).display = False
+        self.query_one("#status", Static).display = False
+        msg = self.query_one("#done-msg", Static)
+        if error:
+            msg.update(
+                f"[b red]✗ {self._LABELS[self.action]} failed[/]\n\n"
+                f"[dim]{error}[/]\n\n"
+                f"Press [b]Escape[/] to go back."
+            )
+        else:
+            msg.update(
+                f"[b]✓ {self._LABELS[self.action]} complete[/]\n\n"
+                f"Press [b]Escape[/] to go back."
+            )
+        msg.display = True
+        msg.refresh()
 
     @work(thread=True, exclusive=True)
     def _run(self) -> None:
         cname = self.collection[0]
         call = self.app.call_from_thread
+        error: str | None = None
 
-        if self.action == "videos":
-            downloadLib.downloadVideos(cname, self.site)
+        try:
+            if self.action == "videos":
+                downloadLib.downloadVideos(cname, self.site)
 
-        elif self.action == "audio":
-            downloadLib.downloadAudio(cname, self.site)
+            elif self.action == "audio":
+                downloadLib.downloadAudio(cname, self.site)
 
-        elif self.action == "transcribe":
-            call(self._start_indeterminate, "Downloading audio")
-            downloadLib.downloadAudio(cname, self.site)
+            elif self.action == "transcribe":
+                call(self._start_indeterminate, "Downloading audio")
+                downloadLib.downloadAudio(cname, self.site)
 
-            # count mp3s to size the progress bar before starting
-            from pathlib import Path
-            audioDir = Path(f"./out/downloads/{self.site}/{cname}/audio/")
-            wavDir = audioDir / "wavs"
-            mp3_total = len(list(audioDir.glob("*.mp3")))
-            call(self._start_progress, "Converting to WAV", mp3_total or 1)
-            downloadLib.convertAudio(
-                cname, self.site,
-                on_progress=lambda cur, tot: call(self._advance_progress, cur, tot),
-            )
+                from pathlib import Path
+                audioDir = Path(f"./out/downloads/{self.site}/{cname}/audio/")
+                wavDir = audioDir / "wavs"
+                mp3_total = len(list(audioDir.glob("*.mp3")))
+                call(self._start_progress, "Converting to WAV", mp3_total or 1)
+                downloadLib.convertAudio(
+                    cname, self.site,
+                    on_progress=lambda cur, tot: call(self._advance_progress, cur, tot),
+                )
 
-            wav_total = len(list(wavDir.glob("*.wav")))
-            call(self._start_progress, "Transcribing", wav_total or 1)
-            downloadLib.transcribeWavs(
-                cname, self.site,
-                on_progress=lambda cur, tot: call(self._advance_progress, cur, tot),
-            )
-
-        call(self._finish)
+                wav_total = len(list(wavDir.glob("*.wav")))
+                call(self._start_progress, "Transcribing", wav_total or 1)
+                downloadLib.transcribeWavs(
+                    cname, self.site,
+                    on_progress=lambda cur, tot: call(self._advance_progress, cur, tot),
+                )
+        except Exception as e:
+            error = str(e)
+        finally:
+            call(self._finish, error)
 
 
 class WizardApp(App):

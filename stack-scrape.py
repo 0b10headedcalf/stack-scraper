@@ -10,7 +10,15 @@ from src import consts
 from src.scraping import webScraping
 from src.scraping import downloadLib
 
-app = typer.Typer()
+app = typer.Typer(invoke_without_command=True)
+
+
+@app.callback()
+def _default(ctx: typer.Context):
+    if ctx.invoked_subcommand is None:
+        from src.gui.wizard import WizardApp
+
+        WizardApp().run()
 
 
 PLATFORM = consts.PLATFORM
@@ -73,12 +81,23 @@ def _tqdm_progress(desc: str):
     return callback
 
 
+def _fetch_and_save_collections(site: str, headless: bool):
+    cols = webScraping.scrapeCollections(platform=site, headless=headless)
+    os.makedirs("./out", exist_ok=True)
+    with open(f"./out/{site.lower()}-collections.json", "w") as f:
+        json.dump(cols, f)
+    return cols
+
+
 @app.command()
 def run_nogui(site: str, headless: bool):
     cols = seeCollections(platform=site, intrun=False)
     if not cols:
-        print("No collections found.")
-        sys.exit(1)
+        print("No collections cached. Fetching now...")
+        cols = _fetch_and_save_collections(site, headless)
+        print(
+            f"Cached {len(cols)} collections to ./out/{site.lower()}-collections.json"
+        )
     for i, col in enumerate(cols, 1):
         print(f"{i}. {col[0]}")
     collection = cols[int(input("Choose a collection: ")) - 1]
@@ -137,8 +156,8 @@ def setup():
 
 
 if __name__ == "__main__":
-    if not FTS:
-        app()
-    elif FTS == True:
+    if FTS:
         print("running setup...")
         setup()
+    else:
+        app()

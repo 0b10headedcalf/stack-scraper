@@ -9,7 +9,7 @@ from playwright.sync_api import Page
 DIRNAME = os.getcwd()
 STATEPATH = os.path.join(DIRNAME, "usrdata/state.json")
 f_SETTINGS = open("settings.toml", "rb")
-f_CREDENTIALS = open("./usrdata/credentials-test.toml", "rb")
+f_CREDENTIALS = open("./usrdata/credentials.toml", "rb")
 SETTINGS = tomllib.load(f_SETTINGS)
 LOGIN_CREDENTIALS = tomllib.load(f_CREDENTIALS)
 FTS, BROWSER = SETTINGS["setup"]["fts"], SETTINGS["setup"]["browser"]

@@ -64,6 +64,18 @@ ProgressBar {
     margin-bottom: 1;
 }
 
+#done-msg {
+    width: auto;
+    height: auto;
+    min-width: 40;
+    color: $ss-accent;
+    text-align: center;
+    padding: 1 2;
+    margin: 1 0;
+    border: round $ss-accent;
+    background: #272e33;
+}
+
 ProgressBar Bar {
     color: $ss-accent;
     background: #414b50;
