@@ -165,8 +165,9 @@ def scrape_tiktok(headless: bool, collection):
         links = scrollScrape(
             page, container=container, platform="tiktok", tt_isCollection=True
         )
+        video_links = [l for l in links if "/video/" in l]
         with open(f"./out/{collection[0]}-tiktok-links.json", "w") as f:
-            json.dump(links, f)
+            json.dump(video_links, f)
 
 
 def scrape(site: str, headless: bool, collection):

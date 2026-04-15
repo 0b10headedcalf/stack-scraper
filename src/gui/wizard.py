@@ -13,12 +13,14 @@ from textual.widgets import (
     Header,
     LoadingIndicator,
     OptionList,
+    ProgressBar,
     Static,
 )
 from textual.widgets.option_list import Option
 
 from src import consts
 from src.scraping import webScraping
+from src.scraping import downloadLib
 
 LOGO = textwrap.dedent(consts.logo).strip("\n")
 
@@ -145,11 +147,94 @@ class ScrapeScreen(Screen):
         actions.focus()
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
-        self.notify(
-            f"'{event.option.prompt}' not yet implemented",
-            severity="warning",
-            title="TODO",
-        )
+        self.app.push_screen(ActionScreen(event.option.id, self.site, self.collection))
+
+
+class ActionScreen(Screen):
+    BINDINGS = [("escape", "app.pop_screen", "Back"), ("q", "app.quit", "Quit")]
+
+    _LABELS = {
+        "videos": "Downloading videos",
+        "audio": "Downloading audio",
+        "transcribe": "Transcribing",
+    }
+
+    def __init__(self, action: str, site: str, collection) -> None:
+        super().__init__()
+        self.action = action
+        self.site = site
+        self.collection = collection
+
+    def compose(self) -> ComposeResult:
+        yield Header(show_clock=True)
+        with Vertical(id="content"):
+            yield Static(self._LABELS[self.action] + "…", id="status")
+            yield LoadingIndicator(id="loader")
+            yield ProgressBar(id="progress", show_eta=False, show_percentage=True)
+        yield Footer()
+
+    def on_mount(self) -> None:
+        self.query_one("#progress", ProgressBar).display = False
+        self._run()
+
+    def _set_status(self, msg: str) -> None:
+        self.query_one("#status", Static).update(msg)
+
+    def _start_indeterminate(self, label: str) -> None:
+        self._set_status(label + "…")
+        self.query_one("#loader", LoadingIndicator).display = True
+        self.query_one("#progress", ProgressBar).display = False
+
+    def _start_progress(self, label: str, total: int) -> None:
+        self._set_status(label + "…")
+        self.query_one("#loader", LoadingIndicator).display = False
+        bar = self.query_one("#progress", ProgressBar)
+        bar.update(total=total, progress=0)
+        bar.display = True
+
+    def _advance_progress(self, current: int, total: int) -> None:
+        self.query_one("#progress", ProgressBar).update(progress=current)
+
+    def _finish(self) -> None:
+        self._set_status("Done!")
+        self.query_one("#loader", LoadingIndicator).display = False
+        bar = self.query_one("#progress", ProgressBar)
+        bar.display = False
+
+    @work(thread=True, exclusive=True)
+    def _run(self) -> None:
+        cname = self.collection[0]
+        call = self.app.call_from_thread
+
+        if self.action == "videos":
+            downloadLib.downloadVideos(cname, self.site)
+
+        elif self.action == "audio":
+            downloadLib.downloadAudio(cname, self.site)
+
+        elif self.action == "transcribe":
+            call(self._start_indeterminate, "Downloading audio")
+            downloadLib.downloadAudio(cname, self.site)
+
+            # count mp3s to size the progress bar before starting
+            from pathlib import Path
+            audioDir = Path(f"./out/downloads/{self.site}/{cname}/audio/")
+            wavDir = audioDir / "wavs"
+            mp3_total = len(list(audioDir.glob("*.mp3")))
+            call(self._start_progress, "Converting to WAV", mp3_total or 1)
+            downloadLib.convertAudio(
+                cname, self.site,
+                on_progress=lambda cur, tot: call(self._advance_progress, cur, tot),
+            )
+
+            wav_total = len(list(wavDir.glob("*.wav")))
+            call(self._start_progress, "Transcribing", wav_total or 1)
+            downloadLib.transcribeWavs(
+                cname, self.site,
+                on_progress=lambda cur, tot: call(self._advance_progress, cur, tot),
+            )
+
+        call(self._finish)
 
 
 class WizardApp(App):

@@ -59,6 +59,20 @@ LoadingIndicator {
     margin-bottom: 1;
 }
 
+ProgressBar {
+    width: 48;
+    margin-bottom: 1;
+}
+
+ProgressBar Bar {
+    color: $ss-accent;
+    background: #414b50;
+}
+
+ProgressBar PercentageStatus {
+    color: $ss-prompt;
+}
+
 Header {
     background: $ss-panel;
     color: $ss-accent;
