@@ -74,7 +74,7 @@ def scrollScrape(
                 )
         while True:
             current = validlinks.count()
-            print(current)
+            # print(current)
             if current == prev:
                 break
             prev = current
@@ -112,7 +112,7 @@ def scrollScrape(
                 "els=>els.map(el=>el.href)"
             )
             seen.update(current_links)
-            print(prev, len(seen))
+            # print(prev, len(seen))
             if len(seen) == prev:
                 break
         return list(seen)

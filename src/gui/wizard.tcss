@@ -1,18 +1,12 @@
-/* ─── theme variables ─────────────────────────────────────────────
- * TODO (user): tune the palette below to taste. These three vars
- * drive the whole look. Try a warm palette ($ss-accent: #ff8c42) or
- * a mono one ($ss-accent: #c0c0c0; $ss-panel: #1a1a1a).
- * NOTE: do NOT rename to $panel/$accent — those are Textual built-ins
- * and overriding them breaks the default stylesheet.
- */
-$ss-accent: #7aa2f7;
-$ss-panel: #1f2335;
-$ss-prompt: #c0caf5;
+/* Everforest dark (medium) */
+$ss-accent: #a7c080;  
+$ss-panel: #2e383c;   
+$ss-prompt: #d3c6aa;  
 /* ─────────────────────────────────────────────────────────────── */
 
 Screen {
     align: center middle;
-    background: $surface;
+    background: #272e33;  /* everforest bg0 */
 }
 
 #content {
@@ -60,7 +54,8 @@ OptionList > .option-list--option-highlighted {
 
 LoadingIndicator {
     color: $ss-accent;
-    height: 3;
+    width: 32;
+    height: 2;
     margin-bottom: 1;
 }
 
@@ -103,8 +98,8 @@ VerticalScroll#content {
 
 .field-group Input {
     margin-bottom: 1;
-    background: $surface;
-    border: tall $primary 30%;
+    background: #272e33;
+    border: tall #414b50;
 }
 
 .field-group Input:focus {

@@ -27,7 +27,7 @@ class SetupScreen(Screen):
                 classes="prompt",
             )
 
-            yield Static("[ Instagram ]", classes="section")
+            yield Static("── Instagram ──", classes="section")
             with Vertical(classes="field-group"):
                 yield Label("Username")
                 yield Input(placeholder="username", id="ig_user")
@@ -36,7 +36,7 @@ class SetupScreen(Screen):
                 yield Label("Password")
                 yield Input(placeholder="••••••••", password=True, id="ig_pass")
 
-            yield Static("[ TikTok ]", classes="section")
+            yield Static("── TikTok ──", classes="section")
             with Vertical(classes="field-group"):
                 yield Label("Username")
                 yield Input(placeholder="username", id="tt_user")
@@ -75,29 +75,9 @@ class SetupScreen(Screen):
             },
         }
 
-    def _validate(self, fields: dict) -> str | None:
-        """
-        TODO (user): decide validation policy. Return error string to block
-        save, or None to allow it.
-
-        Trade-offs:
-          - Strict (require all 6 fields, basic email check) = fewer broken
-            login attempts later, but blocks users who only use one platform.
-          - Lenient (allow blank platform if all 3 of its fields blank) =
-            flexible, but a half-filled platform silently fails on scrape.
-          - None = trust user, write whatever they typed.
-
-        Pick one. ~5–10 lines.
-        """
-        return None
-
     def action_submit(self) -> None:
         fields = self._collect()
-        err = self._validate(fields)
         err_widget = self.query_one("#error", Static)
-        if err:
-            err_widget.update(f"[b red]{err}[/b red]")
-            return
         err_widget.update("")
         try:
             self._write_credentials(fields)
@@ -144,7 +124,7 @@ class DoneScreen(Screen):
     def on_mount(self) -> None:
         self.query_one("#quit", Button).focus()
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    def on_button_pressed(self) -> None:
         self.app.exit()
 
 

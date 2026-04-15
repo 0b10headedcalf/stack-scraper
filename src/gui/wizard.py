@@ -33,8 +33,8 @@ class SitePickerScreen(Screen):
     BINDINGS = [("q", "app.quit", "Quit")]
 
     def compose(self) -> ComposeResult:
-        # yield Header()
-        with Vertical():
+        yield Header()
+        with Vertical(id="content"):
             yield Static(LOGO, id="logo", markup=False)
             yield Static("Which site do you want to scrape?", classes="prompt")
             yield OptionList(
@@ -75,11 +75,8 @@ class CollectionsScreen(Screen):
 
     @work(thread=True, exclusive=True)
     def _fetch_collections(self) -> None:
-        state_path = consts.STATEPATHS[self.site.lower()]
-        headless = False  # original wizard: always windowed (login may be needed)
-        _ = state_path  # state existence is informational; original behavior preserved
         collections = _silenced_call(
-            webScraping.scrapeCollections, platform=self.site, headless=headless
+            webScraping.scrapeCollections, platform=self.site, headless=False
         )
         os.makedirs("./out", exist_ok=True)
         with open(f"./out/{self.site}-collections.json", "w") as f:
