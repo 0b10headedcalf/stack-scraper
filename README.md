@@ -1,5 +1,6 @@
 # Stack Scraper
 
+![stack scraper intro](./resources/intro.png)
 Download and transcribe your saved Instagram and TikTok collections.
 
 Stack Scraper logs into your account, opens your saved collections, grabs every post in them, and (optionally) downloads the videos, extracts audio, or generates text transcripts. Everything lives in the `./out` directory on your computer. No cloud, no accounts to sign up for, your data stays with you.
@@ -46,6 +47,8 @@ That last line installs ffmpeg and yt-dlp. On Windows, run it from an **administ
 ## First-time setup
 
 You need to tell Stack Scraper your Instagram and/or TikTok login so it can see your saved collections. Your credentials stay on your machine — they're only used to log in once, after which a browser session is saved locally.
+
+![](./resources/setup.png)
 
 Just run python stack-scrape.py, and the setup wizard will help you through setting up your credentials. If you'd prefer to do it manually, see steps:
 
