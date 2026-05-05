@@ -67,7 +67,7 @@ def scrollScrape(
             f: set = set(
                 tuple(c)
                 for c in validlinks.evaluate_all(
-                    "els => els.map(el => [el.querySelector('img')?.alt, el.querySelector('a')?.href])"
+                    "els => els.map(el => [el.querySelector('img')?.alt || el.querySelector('p,span,[class*=\"title\"]')?.textContent?.trim() || null, el.querySelector('a')?.href])"
                 )
             )
         while True:
@@ -87,12 +87,15 @@ def scrollScrape(
                 f.update(
                     tuple(c)
                     for c in validlinks.evaluate_all(
-                        "els => els.map(el => [el.querySelector('img')?.alt, el.querySelector('a')?.href])"
+                        "els => els.map(el => [el.querySelector('img')?.alt || el.querySelector('p,span,[class*=\"title\"]')?.textContent?.trim() || null, el.querySelector('a')?.href])"
                     )
                 )
         if tt_isCollection:
             return list(f)
-        return [c for c in f if c[0] is not None]
+        return [
+            (c[0] if c[0] else c[1].rstrip("/").split("/")[-1], c[1])
+            for c in f if c[1] is not None
+        ]
 
     if platform.lower() == "instagram":
         seen = set()
